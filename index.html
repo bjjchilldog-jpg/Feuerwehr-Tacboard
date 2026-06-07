@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BOS TacBoard OS</title>
+    <meta name="theme-color" content="#c0392b">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="img/logo.png">
+    <link rel="apple-touch-icon" href="img/logo.png">
+    
+    <style>
+        /* --- BOS FARBSCHEMA --- */
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #0d1117; color: #e0e0e0; margin: 0; padding: 10px; display: flex; justify-content: center; overflow-x: hidden; transition: background-color 0.3s; }
+        .app-container { width: 100%; max-width: 480px; background-color: #1a1c20; border-radius: 8px; border: 1px solid #2c3e50; padding: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.9); min-height: 95vh; position: relative; transition: all 0.3s;}
+        
+        h1, h2, h3 { text-align: center; color: #3498db; margin-top: 0; text-transform: uppercase; letter-spacing: 1px; }
+        h1 { border-bottom: 2px solid #c0392b; padding-bottom: 15px; margin-bottom: 20px; font-size: 24px; color: #ecf0f1; position: relative;}
+        h1 span { color: #e74c3c; }
+        h2 { font-size: 16px; margin-bottom: 12px; color: #e74c3c; }
+        h3 { font-size: 13px; margin-top: 20px; border-top: 1px solid #2c3e50; padding-top: 15px; color: #3498db;}
+        
+        .view { display: none; animation: fadeIn 0.2s; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        label { display: block; margin-top: 12px; font-size: 11px; color: #7f8c8d; font-weight: bold; text-transform: uppercase; }
+        select, input, textarea { width: 100%; padding: 12px; margin-top: 5px; background-color: #0d1117; color: white; border: 1px solid #2c3e50; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+        textarea { min-height: 80px; resize: vertical; }
+        select:focus, input:focus, textarea:focus { border-color: #e74c3c; outline: none; }
+        
+        .btn { display: flex; flex-direction: row; align-items: center; justify-content: center; width: 100%; padding: 18px 10px; margin: 8px 0; font-size: 13px; font-weight: 900; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; gap: 10px; box-sizing: border-box; transition: 0.2s; }
+        .btn .icon { font-size: 1.4em; } 
+
+        .btn-red { background-color: #c0392b; color: #fff; }
+        .btn-blue { background-color: #2980b9; color: #fff; }
+        .btn-yellow { background-color: #f39c12; color: #000; }
+        .btn-green { background-color: #27ae60; color: #fff; }
+        .btn-dark { background-color: #22262a; color: #3498db; border: 1px solid #2c3e50; }
+        
+        .btn-sm-del { background-color: #c0392b; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-sm-cal { background-color: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn:active { transform: scale(0.98); filter: brightness(1.2); }
+
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .menu-grid .btn { padding: 15px 5px; font-size: 11px; flex-direction: column; gap: 6px; margin: 0; text-align: center; }
+        .menu-grid .menu-full { grid-column: span 2; flex-direction: row; font-size: 14px !important; padding: 20px 15px; }
+
+        .card { background: #22262a; padding: 15px; border-radius: 4px; margin-top: 10px; border-left: 4px solid #2980b9; transition: 0.3s;}
+        
+        .deadline-row { display: flex; justify-content: space-between; align-items: center; background: #0d1117; padding: 10px; margin-top: 8px; border-radius: 4px; border-left: 4px solid #3498db; font-size: 13px; }
+        .admin-date-row { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+        .admin-date-row input { flex: 1; margin: 0; }
+        .admin-date-row .btn-sm-cal { margin: 0; padding: 12px; font-size: 14px; width: 45px; display: flex; justify-content: center; align-items: center; }
+
+        .gear-row { display: flex; align-items: center; background: #0d1117; padding: 12px; margin-top: 8px; border-radius: 4px; border-left: 4px solid #2c3e50; cursor: pointer; }
+        .gear-row.checked { border-left-color: #27ae60; background: #14221a; }
+        .gear-row span { flex-grow: 1; font-size: 14px; font-weight: bold; }
+        .gear-row.checked span { text-decoration: line-through; color: #666; }
+
+        .log-entry { background: #22262a; padding: 15px; border-radius: 4px; margin-top: 10px; font-size: 13px; border-left: 4px solid #f39c12; }
+        .log-date { color: #7f8c8d; font-size: 11px; margin-bottom: 5px; font-weight: bold; }
+        .log-img { width: 100%; margin-top: 10px; border-radius: 4px; border: 1px solid #2c3e50; }
+
+        #radarCanvas { display: block; margin: 0 auto; background: #0d1117; border-radius: 50%; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .radar-slider-box { background: #22262a; padding: 15px; border-radius: 4px; margin-top: 15px; border: 1px solid #2c3e50; display: none;}
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; margin: 10px 0; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #3498db; cursor: pointer; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: #2c3e50; border-radius: 3px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; color: #fff; margin-top: 10px;}
+        
+        .dash-box { background: #22262a; padding: 15px; border-radius: 4px; text-align: center; border-bottom: 3px solid #2980b9; margin-top: 15px;}
+        .dash-val { font-size: 28px; font-weight: 900; color: #2980b9; margin: 5px 0; font-family: monospace;}
+        .dash-label { font-size: 10px; color: #7f8c8d; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;}
+
+        .timer-display { font-size: 55px; text-align: center; margin: 20px 0; font-family: monospace; font-weight: bold; color: #e74c3c; }
+        .step-red { background-color: #0d1117; border-left: 4px solid #c0392b; margin: 10px 0; padding: 12px; font-size: 13px; border-radius: 4px; }
+        
+        .ref-card { background: #0d1117; padding: 10px; border-left: 3px solid #3498db; margin-top: 8px; font-size: 13px; }
+        .ref-card strong { color: #ecf0f1; }
+        
+        .rdl-bar-bg { width: 100%; height: 12px; background: #0d1117; border-radius: 6px; margin-top: 10px; border: 1px solid #2c3e50; overflow: hidden; position: relative;}
+        .rdl-bar-fill { height: 100%; background: #27ae60; width: 0%; transition: width 0.5s ease-in-out; }
+
+        #strobeScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: none; z-index: 9999; cursor: pointer; }
+
+        #splash-screen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background-color: #0d1117; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; z-index: 99999; 
+            animation: hideSplash 0.5s ease-out forwards;
+            animation-delay: 2.0s; pointer-events: none; padding: 20px; text-align: center;
+        }
+        @keyframes hideSplash { 100% { opacity: 0; visibility: hidden; } }
+        .eid-text { color: #3498db; font-size: 18px; font-style: italic; line-height: 1.6; max-width: 400px; border-left: 4px solid #c0392b; padding-left: 15px; text-align: left;}
+        
+        .header-profile { background: #22262a; padding: 10px 15px; border-radius: 4px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #2c3e50; cursor: pointer; transition: 0.2s;}
+        .header-profile:active { background: #2c3e50; }
+
+        /* Checkboxes für Log */
+        .gf-checkbox { display: flex; align-items: flex-start; margin-bottom: 12px; font-size: 13px; cursor: pointer; color: #ccc;} 
+        .gf-checkbox input { width: 18px; height: 18px; margin-right: 10px; accent-color: #e74c3c; margin-top: 1px;}
+
+        /* --- NEU: ASÜ, GEFAHRGUT, FÜHRUNGSTAGEBUCH --- */
+        .trupp-row { background: #0d1117; border: 1px solid #2c3e50; border-radius: 6px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #3498db; }
+        .trupp-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; margin-bottom: 8px;}
+        .trupp-time { font-family: monospace; font-size: 20px; color: #27ae60; }
+        .trupp-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px; }
+        .trupp-inputs input { padding: 8px; font-size: 12px; }
+
+        .fuehrung-log-entry { background: #111; border-left: 3px solid #2980b9; padding: 10px; margin-top: 10px; border-radius: 4px; font-size: 13px; }
+        .fuehrung-time { color: #f39c12; font-family: monospace; font-size: 11px; margin-bottom: 3px; display: block; }
+        .fuehrung-gps { color: #7f8c8d; font-family: monospace; font-size: 10px; display: block; margin-top: 5px; }
+
+        /* --- REDLIGHT MODE CSS --- */
+        body.red-mode { background-color: #050000 !important; color: #ff3333 !important; }
+        body.red-mode .app-container { background-color: #110000 !important; border-color: #500 !important; box-shadow: 0 8px 30px rgba(255,0,0,0.2); }
+        body.red-mode .card, body.red-mode .dash-box, body.red-mode .ref-card, body.red-mode .log-entry, body.red-mode .gear-row, body.red-mode .deadline-row, body.red-mode .header-profile, body.red-mode .step-red, body.red-mode .trupp-row, body.red-mode .fuehrung-log-entry { background-color: #1a0000 !important; border-color: #800 !important; color: #ff3333 !important;}
+        body.red-mode h1, body.red-mode h2, body.red-mode h3, body.red-mode strong, body.red-mode span, body.red-mode div, body.red-mode label, body.red-mode p { color: #ff3333 !important; }
+        body.red-mode input, body.red-mode select, body.red-mode textarea { background-color: #0a0000 !important; color: #f00 !important; border-color: #600 !important; }
+        body.red-mode .btn, body.red-mode .btn-sm-del, body.red-mode .btn-sm-cal { background-color: #400 !important; color: #f00 !important; border: 1px solid #700 !important; }
+        body.red-mode .timer-display, body.red-mode #radarOverallScore, body.red-mode .trupp-time { color: #ff0000 !important; text-shadow: 0 0 10px #f00; }
+        body.red-mode .rdl-bar-fill { background-color: #f00 !important; }
+        .btn-redlight { position: absolute; top: 20px; right: 20px; background: #300; border: 1px solid #f00; color: #f00; padding: 5px 10px; font-size: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; z-index: 100;}
+
+        /* Alarmplan Specifc */
+        .alarm-step { padding: 15px; border-radius: 6px; margin-bottom: 12px; font-weight: bold; font-size: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); color:#fff;}
+        .alarm-yellow { background: #f39c12; color: #000; } .alarm-red-step { background: #e74c3c; } .alarm-blue { background: #2980b9; } .alarm-orange { background: #d35400; } .alarm-green { background: #27ae60; }
+        .pt-btn { background: #0d1117; border: 1px solid #2c3e50; border-radius: 6px; padding: 15px 5px; text-align: center; cursor: pointer; color: #fff; font-weight: bold; font-size: 12px;}
+        .pt-btn span { display: block; font-size: 30px; margin-bottom: 8px; }
+        #pt-fullscreen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box;}
+    </style>
+</head>
+<body>
+
+<div id="strobeScreen" onclick="toggleStrobe()"></div>
+
+<div id="splash-screen">
+    <h1 style="border:none; color:#ecf0f1; font-size:32px;">BOS TACBOARD</h1>
+    <div class="eid-text">
+        "Gott zur Ehr,<br>dem Nächsten zur Wehr."
+    </div>
+    <div style="margin-top: 30px; width: 40px; height: 4px; background-color: #e74c3c;"></div>
+</div>
+
+<div class="app-container">
+    <button class="btn-redlight" onclick="toggleRedMode()" id="redModeBtn">🔴 NACHT MODUS</button>
+    <h1>BOS TACBOARD<span>.</span></h1>
+
+    <div class="header-profile" onclick="switchView('view-profile')">
+        <div>
+            <div id="hdrName" style="color:#ecf0f1; font-weight:bold; font-size:16px;">Bitte Profil anlegen</div>
+            <div id="hdrRK" style="color:#7f8c8d; font-size:11px; text-transform:uppercase; margin-top:3px;">Klick hier für Settings</div>
+        </div>
+        <div style="font-size: 24px;">🚒</div>
+    </div>
+
+    <div id="view-menu" class="view active">
+        <div class="section-title">AKUTER EINSATZ</div>
+        <div class="menu-grid">
+            <button class="btn btn-red menu-full" onclick="switchView('view-fuehrung')"><span class="icon">📝</span><span>FÜHRUNGSTAGEBUCH (LOG)</span></button>
+            <button class="btn btn-blue" onclick="switchView('view-asue')"><span class="icon">⏱️</span><span>ATEMSCHUTZ (ASÜ)</span></button>
+            <button class="btn btn-yellow" onclick="switchView('view-gefahrgut')"><span class="icon">☣️</span><span>GEFAHRGUT / ABC</span></button>
+            <button class="btn btn-dark" onclick="switchView('view-alarmplan')"><span class="icon">🚨</span><span>ALARMPLAN DEESKALATION</span></button>
+            <button class="btn btn-dark" onclick="switchView('view-pointtalk')"><span class="icon">🌐</span><span>POINT & TALK (SPRACHE)</span></button>
+            <button class="btn btn-dark menu-full" style="border-color:#f39c12; color:#f39c12;" onclick="switchView('view-log')"><span class="icon">📸</span><span>DGUV QUICK-LOG (ÜBERCRIFF)</span></button>
+        </div>
+
+        <div class="section-title">FÜHRUNG & TAKTIK</div>
+        <div class="menu-grid">
+            <button class="btn btn-dark" onclick="switchView('view-opord')"><span class="icon">📋</span><span>EINSATZBEFEHL</span></button>
+            <button class="btn btn-dark" onclick="switchView('view-maschinist')"><span class="icon">🧮</span><span>MASCHINISTEN RECHNER</span></button>
+            <button class="btn btn-blue" onclick="switchView('view-stan')"><span class="icon">🎒</span><span>FAHRZEUG CHECK</span></button>
+            <button class="btn btn-blue" onclick="switchView('view-readiness')"><span class="icon">📅</span><span>GERÄTEWART & FRISTEN</span></button>
+            <button class="btn btn-dark menu-full" onclick="switchView('view-thl')"><span class="icon">🚗</span><span>THL & VERKEHRSUNFALL</span></button>
+            <button class="btn btn-dark" onclick="switchView('view-rdl')"><span class="icon">🚒</span><span>DIENST-TRACKER</span></button>
+            <button class="btn btn-dark" onclick="switchView('view-radar')"><span class="icon">🕸️</span><span>SKILL RADAR</span></button>
+        </div>
+
+        <div class="section-title">AUSBILDUNG & REFERENZ</div>
+        <div class="menu-grid">
+            <button class="btn btn-dark menu-full" onclick="switchView('view-training')"><span class="icon">🎮</span><span>ÜBUNGSSZENARIEN (INTERAKTIV)</span></button>
+            <button class="btn btn-dark" onclick="switchView('view-reference')"><span class="icon">📖</span><span>TASCHENKARTEN</span></button>
+            <button class="btn btn-dark" onclick="switchView('view-contacts')"><span class="icon">📞</span><span>KONTAKTE</span></button>
+            <button class="btn btn-dark menu-full" style="background:#1a222a; border-color:#2c3e50;" onclick="switchView('view-data')"><span class="icon">💾</span><span>DATENSICHERUNG (BACKUP)</span></button>
+        </div>
+    </div>
+
+    <div id="view-profile" class="view">
+        <h2>PROFIL & ECKDATEN</h2>
+        <div class="card">
+            <label>Dienstgrad:</label>
+            <select id="profRank">
+                <option value="FM">Feuerwehrmann (FM)</option><option value="OFM">Oberfeuerwehrmann (OFM)</option><option value="HFM">Hauptfeuerwehrmann (HFM)</option><option value="LM">Löschmeister (LM)</option><option value="OLM">Oberlöschmeister (OLM)</option><option value="HLM">Hauptlöschmeister (HLM)</option><option value="BM">Brandmeister (BM)</option><option value="OBM">Oberbrandmeister (OBM)</option><option value="HBM">Hauptbrandmeister (HBM)</option><option value="SBI">Stadtbrandinspektor (SBI)</option>
+            </select>
+            <label>Nachname, Vorname:</label><input type="text" id="profName" placeholder="z.B. Muster, Max">
+            <label>Einheit / Wache:</label><input type="text" id="profRK" placeholder="z.B. FF Musterhausen">
+            <label>Heimatadresse (für Alarmierung):</label><textarea id="profAddress" placeholder="Straße, PLZ, Ort"></textarea>
+            <button class="btn btn-blue" style="margin-top:20px;" onclick="saveProfile()">PROFIL SPEICHERN</button>
+        </div>
+        <button class="btn btn-dark" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+    <div id="view-fuehrung" class="view">
+        <h2>📝 FÜHRUNGSTAGEBUCH</h2>
+        <p style="font-size:11px; color:#888; text-align:center;">4-fach Vordruck digital. Erfasst autom. Zeit & GPS.</p>
+        
+        <div class="card" style="border-left-color:#e74c3c;">
+            <label>Neuer Eintrag (Meldung / Befehl / Entschluss):</label>
+            <textarea id="ftgText" placeholder="z.B. Wasserversorgung steht. Abschnitt 1 gebildet."></textarea>
+            <button class="btn btn-red" style="margin-top:10px;" onclick="addTagebuchEntry()">EINTRAG HINZUFÜGEN</button>
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:center;">
+            <h3 style="margin:0;">VERLAUF</h3>
+            <button class="btn btn-blue" style="width:auto; padding:8px 15px; margin:0;" onclick="exportTagebuch()"><span class="icon">📋</span> KOPIEREN</button>
+        </div>
+        
+        <div id="ftgList"></div>
+        <button class="btn btn-dark" style="margin-top:20px;" onclick="if(confirm('Tagebuch komplett löschen?')){localStorage.removeItem('bos_fuehrung_log'); loadTagebuch();}">LOG LÖSCHEN</button>
+        <button class="btn btn-dark" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+    <div id="view-asue" class="view">
+        <h2>⏱️ ATEMSCHUTZÜBERWACHUNG</h2>
+        <div class="step-alert" style="border-left-color:#f39c12;">Das System gibt alle 10 Minuten einen Warnton zur Druckabfrage!</div>
+        
+        <div class="trupp-row" id="asue_t1">
+            <div class="trupp-header">
+                <span>ANGRIFFSTRUPP (A-Trupp)</span>
+                <span class="trupp-time" id="asue_t1_time">00:00</span>
+            </div>
+            <div class="trupp-inputs">
+                <input type="text" id="asue_t1_name" placeholder="Namen (z.B. Müller/Meier)">
+                <input type="number" id="asue_t1_p" placeholder="Startdruck (bar)">
+            </div>
+            <div style="display:flex; gap:5px;">
+                <button class="btn btn-green" id="asue_t1_btnStart" style="flex:2; padding:10px;" onclick="startAsue(1)">START</button>
+                <button class="btn btn-blue" style="flex:1; padding:10px;" onclick="alert('Druckabfrage! Letzter Stand eintragen.')">1/3</button>
+                <button class="btn btn-yellow" style="flex:1; padding:10px;" onclick="alert('Rückzug antreten!')">2/3</button>
+                <button class="btn btn-red" id="asue_t1_btnStop" style="flex:1; padding:10px; display:none;" onclick="stopAsue(1)">STOP</button>
+            </div>
+        </div>
+
+        <div class="trupp-row" id="asue_t2" style="border-left-color:#e67e22;">
+            <div class="trupp-header">
+                <span>WASSERTRUPP (W-Trupp)</span>
+                <span class="trupp-time" id="asue_t2_time">00:00</span>
+            </div>
+            <div class="trupp-inputs">
+                <input type="text" id="asue_t2_name" placeholder="Namen">
+                <input type="number" id="asue_t2_p" placeholder="Startdruck (bar)">
+            </div>
+            <div style="display:flex; gap:5px;">
+                <button class="btn btn-green" id="asue_t2_btnStart" style="flex:2; padding:10px;" onclick="startAsue(2)">START</button>
+                <button class="btn btn-blue" style="flex:1; padding:10px;" onclick="alert('Druckabfrage!')">1/3</button>
+                <button class="btn btn-yellow" style="flex:1; padding:10px;" onclick="alert('Rückzug antreten!')">2/3</button>
+                <button class="btn btn-red" id="asue_t2_btnStop" style="flex:1; padding:10px; display:none;" onclick="stopAsue(2)">STOP</button>
+            </div>
+        </div>
+
+        <div class="trupp-row" id="asue_t3" style="border-left-color:#9b59b6;">
+            <div class="trupp-header">
+                <span>SICHERUNGSTRUPP (S-Trupp)</span>
+                <span class="trupp-time" id="asue_t3_time">00:00</span>
+            </div>
+            <div class="trupp-inputs">
+                <input type="text" id="asue_t3_name" placeholder="Namen">
+                <input type="number" id="asue_t3_p" placeholder="Startdruck (bar)">
+            </div>
+            <div style="display:flex; gap:5px;">
+                <button class="btn btn-green" id="asue_t3_btnStart" style="flex:2; padding:10px;" onclick="startAsue(3)">START</button>
+                <button class="btn btn-blue" style="flex:1; padding:10px;" onclick="alert('Druckabfrage!')">1/3</button>
+                <button class="btn btn-yellow" style="flex:1; padding:10px;" onclick="alert('Rückzug antreten!')">2/3</button>
+                <button class="btn btn-red" id="asue_t3_btnStop" style="flex:1; padding:10px; display:none;" onclick="stopAsue(3)">STOP</button>
+            </div>
+        </div>
+        <button class="btn btn-dark" style="margin-top:20px;" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+    <div id="view-gefahrgut" class="view">
+        <h2>☣️ GEFAHRGUT / ABC</h2>
+        
+        <div class="card" style="border-left-color:#f39c12;">
+            <h3 style="margin-top:0;">GAMS-REGEL (ERSTEINSATZ)</h3>
+            <div class="ref-card"><strong>G</strong>efahr erkennen (Absitzen, Fernglas, Windrichtung prüfen)</div>
+            <div class="ref-card"><strong>A</strong>bsperren (min. 50m, bei Explosion/Gas min. 300m)</div>
+            <div class="ref-card"><strong>M</strong>enschenrettung (Nur unter Atemschutz / Eigenschutz!)</div>
+            <div class="ref-card"><strong>S</strong>pezialkräfte anfordern (Fachberater ABC, TUIS)</div>
+        </div>
+
+        <div class="card" style="border-left-color:#e74c3c;">
+            <h3 style="margin-top:0;">WARNTAFEL ENTSCHLÜSSLER</h3>
+            <label>Obere Nummer (Kemler-Zahl / Gefahrnummer):</label>
+            <input type="text" id="kemlerInput" placeholder="z.B. 33 oder X336">
+            <button class="btn btn-red" style="margin-top:10px;" onclick="decodeKemler()">ENTZIFFERN</button>
+            
+            <div id="kemlerResult" style="display:none; margin-top:15px; padding:15px; background:#111; border:1px solid #c0392b; border-radius:4px; font-weight:bold; color:#fff; white-space:pre-wrap;"></div>
+        </div>
+        <button class="btn btn-dark" style="margin-top:20px;" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+    <div id="view-maschinist" class="view">
+        <h2>🧮 MASCHINISTEN RECHNER</h2>
+        <div class="card" style="border-left-color:#3498db;">
+            <h3 style="margin-top:0;">WASSERFÖRDERUNG (DRUCKVERLUST)</h3>
+            <p style="font-size:11px; color:#aaa;">Berechnet Pumpenausgangsdruck für Standard-Angriff (3 C-Rohre / ~800 l/min).<br>Faustregel: 1 bar Verlust pro 10m Höhe. 1 bar Verlust pro 100m B-Schlauch.</p>
+            
+            <label>Schlauchlänge (B-Schlauch in Metern):</label>
+            <input type="number" id="masch_len" value="100">
+            <label>Höhenunterschied (in Metern, z.B. 2. OG = 6m):</label>
+            <input type="number" id="masch_height" value="0">
+            
+            <button class="btn btn-blue" style="margin-top:15px;" onclick="calcMaschinist()">BERECHNEN</button>
+            
+            <div id="masch_res" style="display:none; margin-top:15px; text-align:center; font-size:20px; font-weight:bold; color:#3498db; padding:15px; background:#111; border-radius:4px;"></div>
+        </div>
+        <button class="btn btn-dark" style="margin-top:20px;" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+    <div id="view-thl" class="view">
+        <h2>🚗 THL & VERKEHRSUNFALL</h2>
+        
+        <div class="card" style="border-left-color:#f39c12;">
+            <h3 style="margin-top:0;">AUTO-REGEL (ERKUNDUNG)</h3>
+            <div class="ref-card"><strong>A</strong>uslaufende Betriebsstoffe? (Brandgefahr)</div>
+            <div class="ref-card"><strong>U</strong>nterbauen / Sichern des Fahrzeugs</div>
+            <div class="ref-card"><strong>T</strong>rommel / Türen prüfen (Zugangswege)</div>
+            <div class="ref-card"><strong>O</strong>bjektmanagement (Batterie ab, Airbags?)</div>
+        </div>
+
+        <div class="card" style="border-left-color:#e74c3c;">
+            <h3 style="margin-top:0;">AIRBAG ABSTANDSREGEL</h3>
+            <p style="font-size:12px; color:#aaa;">Sicherheitsabstände zu nicht ausgelösten Airbags im Innenraum:</p>
+            <div class="ref-card"><strong>30 cm:</strong> Seiten- / Kopf- / Knie-Airbag</div>
+            <div class="ref-card"><strong>60 cm:</strong> Fahrer-Airbag (Lenkrad)</div>
+            <div class="ref-card"><strong>90 cm:</strong> Beifahrer-Airbag (Armaturenbrett)</div>
+        </div>
+        <button class="btn btn-dark" style="margin-top:20px;" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+
+    <div id="view-alarmplan" class="view">
+        <h2>🚨 ALARMPLAN DEESKALATION</h2>
+        <p style="font-size:11px; color:#888; text-align:center;">Verhalten bei Aggression an der Einsatzstelle.</p>
+        <div class="alarm-step alarm-yellow">1. "Bitte treten Sie zurück / Beruhigen Sie sich!"</div>
+        <div class="alarm-step alarm-red-step">"Sonst was?!" / Physische Gewalt</div>
+        <div class="alarm-step alarm-blue">2. FUNK: 110 ÜBER EL ANFORDERN</div>
+        <div class="grid-half">
+            <div class="alarm-step alarm-orange" style="margin-bottom:0;"><span style="font-size: 11px; display: block;">Mit Kolleg:innen:</span>FLANKENSCHUTZ</div>
+            <div class="alarm-step alarm-orange" style="margin-bottom:0;"><span style="font-size: 11px; display: block;">Allein am Posten:</span>ALARM AUSLÖSEN</div>
+        </div>
+        <div class="card" style="border-left-color: #e74c3c; margin-bottom: 12px;">
+            <strong style="color:#e74c3c;">Eigenschutz vor Fremdschutz!</strong><br>
+            <span style="font-size:12px; color:#ccc;">Blickkontakt halten, Hände schützend vor den Körper. Niemals den Rücken zuwenden! Keine Diskussionen.</span>
+        </div>
+        <div class="alarm-step alarm-green">Person geht / beruhigt sich ➔ ENDE</div>
+        <button class="btn btn-dark" style="margin-top:20px;" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+    <div id="view-pointtalk" class="view">
+        <h2>🌐 POINT & TALK</h2>
+        <div class="pt-grid">
+            <div class="pt-btn" onclick="showPT('🛑', 'STOP!', 'Stop!', 'Стій!', 'قف!')"><span>🛑</span>STOP</div>
+            <div class="pt-btn" onclick="showPT('🔙', 'ZURÜCK!', 'Back!', 'Відійти', 'تراجع')"><span>🔙</span>ZURÜCK</div>
+            <div class="pt-btn" onclick="showPT('⚠️', 'GEFAHR!', 'Danger!', 'Небезпека!', 'خطر!')"><span>⚠️</span>GEFAHR</div>
+            <div class="pt-btn" onclick="showPT('🚒', 'WIR HELFEN', 'We help', 'Ми допомагаємо', 'نحن نساعد')"><span>🚒</span>HELFER</div>
+            <div class="pt-btn" onclick="showPT('🚑', 'GASSE!', 'Lane!', 'Коридор', 'ممر')"><span>🚑</span>GASSE</div>
+            <div class="pt-btn" onclick="showPT('🚭', 'MOTOR AUS', 'Engine off', 'Вимкнути', 'أطفئ المحرك')"><span>🚭</span>MOTOR AUS</div>
+        </div>
+        <button class="btn btn-dark" style="margin-top:20px;" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+    <div id="pt-fullscreen" onclick="this.style.display='none'">
+        <div id="pt-icon" style="font-size: 100px; margin-bottom: 30px;"></div>
+        <div style="font-size: 35px; font-weight: bold; color:#fff;" id="pt-text"></div>
+        <div style="font-size: 25px; color:#aaa; margin-top:20px;" id="pt-text2"></div>
+        <div style="font-size: 25px; color:#aaa; margin-top:20px;" id="pt-text3"></div>
+    </div>
+
+    <div id="view-log" class="view">
+        <h2>📸 DGUV QUICK-LOG</h2>
+        <p style="font-size:11px; color:#888; text-align:center;">Schnelle Beweissicherung nach Übergriff.</p>
+        <div class="card" style="border-left-color: #f39c12;">
+            <label>1. BEWEISFOTO (KENNZEICHEN / TÄTER)</label>
+            <input type="file" id="logPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="previewPhoto(event)">
+            <button class="btn btn-blue" onclick="document.getElementById('logPhotoInput').click()"><span class="icon">📷</span> FOTO AUFNEHMEN</button>
+            <img id="logPhotoPreview" style="display:none; width:100%; border-radius:4px; margin-top:10px; border:1px solid #2c3e50;">
+        </div>
+        <div class="card" style="border-left-color: #e74c3c;">
+            <label>2. ART DES ÜBERGRIFFS</label>
+            <label class="gf-checkbox"><input type="checkbox" id="chk_bel" value="Beleidigung"> Beleidigung / Pöbelei</label>
+            <label class="gf-checkbox"><input type="checkbox" id="chk_spuck" value="Bespucken"> Bespucken</label>
+            <label class="gf-checkbox"><input type="checkbox" id="chk_droh" value="Bedrohung"> Bedrohung (Worte/Waffe)</label>
+            <label class="gf-checkbox"><input type="checkbox" id="chk_gewalt" value="Gewalt"> Körperliche Gewalt</label>
+        </div>
+        <div class="card" style="border-left-color: #3498db;">
+            <label>3. KURZNOTIZ (Z.B. WORTLAUT)</label>
+            <textarea id="logText" placeholder="Nutze das Mikrofon deiner Tastatur zum Diktieren..."></textarea>
+        </div>
+        <button class="btn btn-green" style="margin-top: 20px;" onclick="saveLog()">💾 LOG SICHERN</button>
+        <h3 style="margin-top:20px;">LOKALE LOGS</h3><div id="logList"></div>
+        <button class="btn btn-dark" style="margin-top:20px;" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+    <div id="view-opord" class="view">
+        <h2>EINSATZBEFEHL</h2>
+        <div class="card">
+            <label>1. Lage</label><textarea id="opord1" placeholder="Schadenslage, Eigene Lage"></textarea>
+            <label>2. Auftrag</label><textarea id="opord2" placeholder="Was ist das Ziel?"></textarea>
+            <label>3. Durchführung</label><textarea id="opord3" placeholder="Zuteilung der Trupps"></textarea>
+            <label>4. Versorgung</label><textarea id="opord4" placeholder="Wasserversorgung, Atemschutzpool"></textarea>
+            <label>5. Führung / Funk</label><textarea id="opord5" placeholder="Funkkanäle, Standort EL"></textarea>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn btn-blue" style="flex:1;" onclick="saveOpord()">SPEICHERN</button>
+                <button class="btn btn-dark" style="flex:1;" onclick="copyOpord()"><span class="icon">📋</span> KOPIEREN</button>
+            </div>
+        </div>
+        <button class="btn btn-dark" style="margin-top:20px;" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+    <div id="view-readiness" class="view">
+        <h2>📅 GERÄTEWART & FRISTEN</h2>
+        <button class="btn btn-dark" style="margin-bottom:15px;" onclick="exportMaintCSV()">⬇️ CSV-EXPORT (EXCEL)</button>
+        
+        <div class="card">
+            <h3 style="margin-top:0;">STANDARD-FRISTEN</h3>
+            <label>G26.3 Atemschutztauglichkeit:</label>
+            <div class="admin-date-row"><input type="date" id="admin_g26" onchange="saveIGF()"><button class="btn-sm-cal" onclick="exportToCalendar('Ablauf G26.3', document.getElementById('admin_g26').value)">📅</button></div>
+            <label>Belastungsübung (Strecke):</label>
+            <div class="admin-date-row"><input type="date" id="admin_strecke" onchange="saveIGF()"><button class="btn-sm-cal" onclick="exportToCalendar('Ablauf Belastungsübung', document.getElementById('admin_strecke').value)">📅</button></div>
+            <label>Erste-Hilfe Training:</label>
+            <div class="admin-date-row"><input type="date" id="admin_eh" onchange="saveIGF()"><button class="btn-sm-cal" onclick="exportToCalendar('Ablauf EH', document.getElementById('admin_eh').value)">📅</button></div>
+            <label>Führerschein / CE:</label>
+            <div class="admin-date-row"><input type="date" id="admin_fs" onchange="saveIGF()"><button class="btn-sm-cal" onclick="exportToCalendar('Ablauf Führerschein', document.getElementById('admin_fs').value)">📅</button></div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0;">INDIVIDUELLE FRISTEN / GERÄTE</h3>
+            <div id="customDeadlinesContainer"></div>
+            <div style="display:flex; gap:10px; margin-top:15px; align-items: flex-end;">
+                <div style="flex:2;"><input type="text" id="customDeadlineName" placeholder="Z.B. TÜV HLF"></div>
+                <div style="flex:2;"><div class="admin-date-row"><input type="date" id="customDeadlineDate"></div></div>
+                <div style="flex:1;"><button class="btn btn-blue" style="margin:0; padding:12px; height: 100%" onclick="addCustomDeadline()">+</button></div>
+            </div>
+        </div>
+        <button class="btn btn-dark" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+    <div id="view-stan" class="view">
+        <h2>🎒 FAHRZEUG & ROLLCONTAINER</h2>
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <input type="text" id="profileNameInput" placeholder="Neue Liste (z.B. RC Wasser)">
+            <button class="btn btn-blue" style="padding:10px; width:auto; margin:0;" onclick="addProfile()">+</button>
+        </div>
+        <div id="profilesContainer"></div>
+        <button class="btn btn-dark" style="margin-top:20px;" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+    <div id="view-rdl" class="view">
+        <h2>🚒 DIENST-TRACKER</h2>
+        <div class="card" style="text-align: center;">
+            <h3 style="margin-top:0;">DIENSTSTUNDEN GESAMT:</h3>
+            <div id="rdlTotalDays" style="font-size:30px; color:#3498db; font-weight:bold;">0 h</div>
+        </div>
+        <div class="card">
+            <h3 style="margin-top:0;">NEUEN DIENST EINTRAGEN</h3>
+            <label>Art (Einsatz, Übung, Lehrgang):</label><input type="text" id="rdlName">
+            <div style="display:flex; gap:10px;">
+                <div style="flex:2;"><label>Datum:</label><input type="date" id="rdlDate"></div>
+                <div style="flex:1;"><label>Stunden:</label><input type="number" id="rdlDays" value="2" min="1"></div>
+            </div>
+            <button class="btn btn-blue" style="margin-top:15px;" onclick="addRdl()">HINZUFÜGEN</button>
+        </div>
+        <h3 style="margin-top:20px;">HISTORIE</h3><div id="rdlList"></div>
+        <button class="btn btn-dark" style="margin-top:20px;" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+    <div id="view-radar" class="view">
+        <h2>SKILL RADAR (FEUERWEHR)</h2>
+        <canvas id="radarCanvas" width="300" height="300"></canvas>
+        <div class="card"><h3 style="margin-top:0;">🛠️ ANALYSE</h3><div id="radarFeedback" style="font-size:13px; color:#ccc;">Lade Profile...</div></div>
+        <button class="btn btn-blue" style="margin-top:20px;" onclick="document.getElementById('radarSliders').style.display='block'">SKILLS BEWERTEN</button>
+        <div id="radarSliders" class="radar-slider-box">
+            <div class="slider-label"><span>Brandeinsatz (Innenangriff)</span><span id="val_waf">5</span></div><input type="range" id="sl_waf" min="1" max="10" value="5" oninput="updateRadarSl('waf')">
+            <div class="slider-label"><span>THL (Rüstsatz)</span><span id="val_san">5</span></div><input type="range" id="sl_san" min="1" max="10" value="5" oninput="updateRadarSl('san')">
+            <div class="slider-label"><span>Führung / Taktik</span><span id="val_tak">5</span></div><input type="range" id="sl_tak" min="1" max="10" value="5" oninput="updateRadarSl('tak')">
+            <div class="slider-label"><span>San / ABC</span><span id="val_ori">5</span></div><input type="range" id="sl_ori" min="1" max="10" value="5" oninput="updateRadarSl('ori')">
+            <div class="slider-label"><span>Maschinist / Technik</span><span id="val_phy">5</span></div><input type="range" id="sl_phy" min="1" max="10" value="5" oninput="updateRadarSl('phy')">
+            <button class="btn btn-green" style="margin-top:15px;" onclick="saveRadar()">SPEICHERN</button>
+        </div>
+        <button class="btn btn-dark" style="margin-top:20px;" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+    <div id="view-training" class="view">
+        <h2>🎮 ÜBUNGSSZENARIEN</h2>
+        <div class="card" style="border-left-color:#9b59b6; background: #1a1c20; margin-bottom: 20px;">
+            <h3 style="margin-top:0; font-size: 14px;">EIGENES SZENARIO IMPORTIEREN</h3>
+            <p style="font-size:11px; color:#aaa; margin-top:0;">Lade eine .json Datei aus dem Szenario-Editor hoch.</p>
+            <input type="file" id="scenarioFileInput" accept=".json" style="display:none" onchange="importScenarioFile(event)">
+            <button class="btn btn-dark" style="border-color:#9b59b6; color:#9b59b6; font-size: 11px;" onclick="document.getElementById('scenarioFileInput').click()">📂 .JSON DATEI LADEN</button>
+        </div>
+        
+        <div id="trainingListContainer" style="display:flex; flex-direction:column; gap:10px;"></div>
+        
+        <div id="training-active" style="display:none;">
+            <div class="card" style="border-left-color: #3498db;">
+                <h3 id="train-title" style="margin-top:0; color:#fff;"></h3>
+                <div style="height:1px; background:#2c3e50; margin:10px 0;"></div>
+                <p id="train-situation" style="font-size: 14px; line-height: 1.5; color: #ccc;"></p>
+                <strong id="train-question" style="color: #f39c12; display:block; margin: 15px 0 10px 0; font-size:15px;"></strong>
+                <div id="train-options" style="display:flex; flex-direction:column; gap:10px;"></div>
+                <div id="train-feedback" style="display:none; padding:15px; border-radius:4px; margin-top:15px; font-weight:bold; color:#fff;"></div>
+                <button id="train-next-btn" class="btn btn-yellow" style="display:none; margin-top:20px;" onclick="renderNode()">WEITER</button>
+            </div>
+        </div>
+        <button class="btn btn-dark" style="margin-top:20px;" onclick="switchView('view-menu'); document.getElementById('trainingListContainer').style.display='flex'; document.getElementById('training-active').style.display='none';">ZURÜCK ZUM MENÜ</button>
+    </div>
+
+    <div id="view-reference" class="view">
+        <h2>📖 TASCHENKARTEN</h2>
+        <div class="card" style="border-left-color:#e74c3c;">
+            <h3 style="margin-top:0; color:#e74c3c;">DGUV AACHENER MODELL</h3>
+            <div class="ref-card"><strong>Stufe 0:</strong> Kontroverse, aber normale Einsatzsituation.</div>
+            <div class="ref-card"><strong>Stufe 1 (Verbale Aggression):</strong> Beschimpfung, Verweigerung, Sachbeschädigung. -> Polizei hinzuziehen.</div>
+            <div class="ref-card"><strong>Stufe 2 (Körperliche Gewalt):</strong> Schlagen, Treten, Bespucken, aktives Behindern. -> Rückzug & Polizei!</div>
+            <div class="ref-card"><strong>Stufe 3 (Waffen):</strong> Messer, Schusswaffen, Überfall. -> Sofortige Flucht, Deckung, 110!</div>
+        </div>
+        <div class="card" style="border-left-color:#3498db;">
+            <h3 style="margin-top:0; color:#3498db;">NOTFALL: cABCDE</h3>
+            <div class="ref-card"><strong>c:</strong> Critical Bleeding (Tourniquet)</div>
+            <div class="ref-card"><strong>A:</strong> Airway (Atemwege frei?)</div>
+            <div class="ref-card"><strong>B:</strong> Breathing (Atmung / Chest Seal)</div>
+            <div class="ref-card"><strong>C:</strong> Circulation (Kreislauf / Schock)</div>
+            <div class="ref-card"><strong>D:</strong> Disability (Neuro / Pupillen)</div>
+            <div class="ref-card"><strong>E:</strong> Exposure (Wärmeerhalt)</div>
+        </div>
+        <div class="card">
+            <h3 style="margin-top:0;">NATO ALPHABET (FUNK)</h3>
+            <div style="column-count: 2; font-size: 13px; color: #ccc;">A - Alpha<br>B - Bravo<br>C - Charlie<br>D - Delta<br>E - Echo<br>F - Foxtrot<br>G - Golf<br>H - Hotel<br>I - India<br>J - Juliett<br>K - Kilo<br>L - Lima<br>M - Mike<br>N - November<br>O - Oscar<br>P - Papa<br>Q - Quebec<br>R - Romeo<br>S - Sierra<br>T - Tango<br>U - Uniform<br>V - Victor<br>W - Whiskey<br>X - X-ray<br>Y - Yankee<br>Z - Zulu</div>
+        </div>
+        <button class="btn btn-dark" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+    <div id="view-contacts" class="view">
+        <h2>📞 KONTAKTE</h2>
+        <div class="card"><strong>Polizei (Notruf)</strong><div style="font-size:12px; color:#ccc; margin-bottom:8px;">Akute Gefahr, Übergriffe.</div><a href="tel:110" class="btn btn-red"><span class="icon">🚔</span> 110 WÄHLEN</a></div>
+        <div class="card"><strong>PSNV (Notfallseelsorge)</strong><div style="font-size:12px; color:#ccc; margin-bottom:8px;">Hilfe nach belastenden Einsätzen.</div><a href="tel:08001110111" class="btn btn-blue"><span class="icon">💬</span> TELEFONSEELSORGE</a></div>
+        <button class="btn btn-dark" style="margin-top:20px;" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+    <div id="view-data" class="view">
+        <h2>DATENSICHERUNG</h2>
+        <div class="card">
+            <h3 style="margin-top:0;">KOMPLETT-BACKUP</h3>
+            <p style="font-size:12px; color:#ccc;">Sichert Profil, Fristen, Logs, STAN, Tracker & Szenarien als JSON-Datei.</p>
+            <button class="btn btn-blue" onclick="exportFullData()"><span class="icon">💾</span> ALLES EXPORTIEREN</button>
+            <div style="margin-top:25px; border-top:1px solid #2c3e50; padding-top:15px;">
+                <h3 style="margin-top:0;">DATEN WIEDERHERSTELLEN</h3>
+                <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importFullData(event)">
+                <button class="btn btn-dark" onclick="document.getElementById('importFileInput').click()"><span class="icon">📂</span> DATEI IMPORTIEREN</button>
+            </div>
+        </div>
+        <button class="btn btn-dark" onclick="switchView('view-menu')">ZURÜCK</button>
+    </div>
+
+</div>
+
+<script>
+    // --- GLOBAL INIT & NAV ---
+    window.onload = function() { 
+        loadProfile(); loadRadar(); loadOpord(); loadRdl(); loadIGF(); renderCustomDeadlines(); loadLogs(); initScenarios(); loadTagebuch();
+        document.getElementById('rdlDate').value = new Date().toISOString().split('T')[0];
+    };
+
+    function switchView(id) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(id==='view-profile') loadProfileForm();
+        if(id==='view-readiness') { loadIGF(); renderCustomDeadlines(); }
+        if(id==='view-stan') renderProfiles();
+        if(id==='view-log') loadLogs();
+        if(id==='view-radar') loadRadar();
+        if(id==='view-opord') loadOpord();
+        if(id==='view-rdl') loadRdl();
+        if(id==='view-training') renderTrainingList();
+        if(id==='view-fuehrung') loadTagebuch();
+        window.scrollTo(0,0);
+    }
+
+    // --- REDLIGHT MODE ---
+    let isRedMode = false;
+    function toggleRedMode() {
+        isRedMode = !isRedMode;
+        if(isRedMode) {
+            document.body.classList.add('red-mode');
+            document.getElementById('redModeBtn').innerText = "⚪ NORMAL MODUS";
+            document.getElementById('redModeBtn').style.color = "#000";
+            document.getElementById('redModeBtn').style.background = "#fff";
+        } else {
+            document.body.classList.remove('red-mode');
+            document.getElementById('redModeBtn').innerText = "🔴 NACHT MODUS";
+            document.getElementById('redModeBtn').style.color = "#f00";
+            document.getElementById('redModeBtn').style.background = "#300";
+        }
+        loadRadar(); 
+    }
+
+    // --- 1. NEU: FÜHRUNGSTAGEBUCH LOGIC ---
+    function addTagebuchEntry() {
+        const txt = document.getElementById('ftgText').value.trim();
+        if(!txt) return alert("Leerer Eintrag!");
+        
+        let gpsString = "Kein GPS";
+        if(navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                gpsString = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+                finalizeTagebuchEntry(txt, gpsString);
+            }, err => {
+                finalizeTagebuchEntry(txt, "GPS Fehler");
+            }, { timeout: 3000 });
+        } else {
+            finalizeTagebuchEntry(txt, gpsString);
+        }
+    }
+
+    function finalizeTagebuchEntry(text, gps) {
+        const logs = JSON.parse(localStorage.getItem('bos_fuehrung_log') || "[]");
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+        logs.unshift({ id: Date.now(), time: timeStr, text: text, gps: gps });
+        localStorage.setItem('bos_fuehrung_log', JSON.stringify(logs));
+        document.getElementById('ftgText').value = "";
+        loadTagebuch();
+    }
+
+    function loadTagebuch() {
+        const logs = JSON.parse(localStorage.getItem('bos_fuehrung_log') || "[]");
+        document.getElementById('ftgList').innerHTML = logs.map(l => `
+            <div class="fuehrung-log-entry">
+                <span class="fuehrung-time">${l.time}</span>
+                <strong>${l.text}</strong>
+                <span class="fuehrung-gps">📍 ${l.gps}</span>
+            </div>
+        `).join('');
+    }
+
+    function exportTagebuch() {
+        const logs = JSON.parse(localStorage.getItem('bos_fuehrung_log') || "[]");
+        let exportStr = "FÜHRUNGSTAGEBUCH\n================\n";
+        logs.slice().reverse().forEach(l => { exportStr += `[${l.time}] ${l.text} (GPS: ${l.gps})\n`; });
+        navigator.clipboard.writeText(exportStr).then(() => alert("Kopiert für WhatsApp/Einsatzbericht."));
+    }
+
+    // --- 2. NEU: ATEMSCHUTZÜBERWACHUNG (ASÜ PRO) ---
+    let asueIntervals = { 1: null, 2: null, 3: null };
+    let asueTimes = { 1: 0, 2: 0, 3: 0 };
+    let globalAsueTick = null; // for 10 min warnings
+
+    function startAsue(truppId) {
+        const name = document.getElementById(`asue_t${truppId}_name`).value;
+        const p = document.getElementById(`asue_t${truppId}_p`).value;
+        if(!name || !p) return alert(`Namen und Startdruck für Trupp ${truppId} angeben!`);
+        
+        document.getElementById(`asue_t${truppId}_btnStart`).style.display = 'none';
+        document.getElementById(`asue_t${truppId}_btnStop`).style.display = 'block';
+        
+        asueTimes[truppId] = 0;
+        asueIntervals[truppId] = setInterval(() => {
+            asueTimes[truppId]++;
+            let m = String(Math.floor(asueTimes[truppId]/60)).padStart(2,'0');
+            let s = String(asueTimes[truppId]%60).padStart(2,'0');
+            document.getElementById(`asue_t${truppId}_time`).innerText = `${m}:${s}`;
+        }, 1000);
+
+        // Start global 10min checker if not running
+        if(!globalAsueTick) {
+            globalAsueTick = setInterval(check10MinWarn, 1000);
+        }
+    }
+
+    function stopAsue(truppId) {
+        clearInterval(asueIntervals[truppId]);
+        asueIntervals[truppId] = null;
+        document.getElementById(`asue_t${truppId}_btnStart`).style.display = 'block';
+        document.getElementById(`asue_t${truppId}_btnStop`).style.display = 'none';
+        document.getElementById(`asue_t${truppId}_time`).style.color = "";
+        
+        // Stop global tick if all trupps are stopped
+        if(!asueIntervals[1] && !asueIntervals[2] && !asueIntervals[3]) {
+            clearInterval(globalAsueTick);
+            globalAsueTick = null;
+        }
+    }
+
+    function check10MinWarn() {
+        [1,2,3].forEach(id => {
+            if(asueIntervals[id] && asueTimes[id] > 0 && asueTimes[id] % 600 === 0) { // Every 10 mins (600s)
+                document.getElementById(`asue_t${id}_time`).style.color = "#c0392b";
+                if("vibrate" in navigator) navigator.vibrate([500,200,500]);
+                alert(`DRUCKABFRAGE: Trupp ${id} ist seit ${Math.floor(asueTimes[id]/60)} Minuten im Einsatz!`);
+                document.getElementById(`asue_t${id}_time`).style.color = "#27ae60"; // reset color after ack
+            }
+        });
+    }
+
+    // --- 3. NEU: GEFAHRGUT ENTSCHLÜSSLER ---
+    function decodeKemler() {
+        let code = document.getElementById('kemlerInput').value.trim().toUpperCase();
+        if(!code) return;
+        
+        let res = "";
+        if(code.startsWith('X')) {
+            res += "⚠️ REAGIERT GEFÄHRLICH MIT WASSER!\n(Kein Wasser zum Löschen verwenden)\n\n";
+            code = code.substring(1);
+        }
+
+        const hazardMap = {
+            '2': 'Entweichen von Gas', '3': 'Entzündbarkeit von Flüssigkeiten / Gasen',
+            '4': 'Entzündbarkeit von Feststoffen', '5': 'Oxidierende (brandfördernde) Wirkung',
+            '6': 'Giftigkeit / Ansteckungsgefahr', '7': 'Radioaktivität',
+            '8': 'Ätzwirkung', '9': 'Gefahr spontaner, heftiger Reaktion'
+        };
+
+        if(code.length > 0 && hazardMap[code[0]]) {
+            res += "HAUPTGEFAHR:\n- " + hazardMap[code[0]] + "\n\n";
+        } else {
+            res += "Hauptgefahr: Unbekannt\n";
+        }
+
+        if(code.length > 1) {
+            if(code[0] === code[1]) {
+                res += "-> GEFAHR IST SEHR STARK AUSGEPRÄGT (Doppelziffer)\n\n";
+            } else if(code[1] !== '0') {
+                res += "ZUSATZGEFAHR 1:\n- " + (hazardMap[code[1]] || "Unbekannt") + "\n\n";
+            }
+        }
+
+        if(code.length > 2 && code[2] !== '0') {
+            res += "ZUSATZGEFAHR 2:\n- " + (hazardMap[code[2]] || "Unbekannt") + "\n";
+        }
+
+        if(code === "22") res = "Tiefkalt verflüssigtes Gas, erstickend";
+        if(code === "333") res = "Pyrophore (selbstentzündliche) flüssige Stoffe";
+
+        const box = document.getElementById('kemlerResult');
+        box.style.display = 'block';
+        box.innerText = res;
+    }
+
+    // --- 4. NEU: MASCHINISTEN RECHNER ---
+    function calcMaschinist() {
+        let len = parseFloat(document.getElementById('masch_len').value) || 0;
+        let h = parseFloat(document.getElementById('masch_height').value) || 0;
+        
+        let strahlrohr = 5; // Standard 5 bar am Strahlrohr
+        let verlust_len = (len / 100) * 1.0; // 1 bar loss per 100m
+        let verlust_h = h / 10; // 1 bar loss per 10m height
+
+        let reqPressure = strahlrohr + verlust_len + verlust_h;
+        
+        let resBox = document.getElementById('masch_res');
+        resBox.style.display = 'block';
+        resBox.innerHTML = `Ausgangsdruck Pumpe:<br><span style="font-size:35px;">~ ${reqPressure.toFixed(1)} bar</span>`;
+    }
+
+    // --- PROFIL ---
+    function saveProfile() {
+        const p = { rank: document.getElementById('profRank').value, name: document.getElementById('profName').value, rk: document.getElementById('profRK').value, address: document.getElementById('profAddress').value };
+        localStorage.setItem('bos_profile', JSON.stringify(p)); loadProfile(); switchView('view-menu');
+    }
+    function loadProfile() {
+        const p = JSON.parse(localStorage.getItem('bos_profile') || '{"rank":"FM","name":"Muster, Max","rk":"FF Musterhausen","address":""}');
+        document.getElementById('hdrName').innerText = `${p.rank} ${p.name}`; document.getElementById('hdrRK').innerText = p.rk;
+    }
+    function loadProfileForm() {
+        const p = JSON.parse(localStorage.getItem('bos_profile') || '{"rank":"FM","name":"Muster, Max","rk":"FF Musterhausen","address":""}');
+        document.getElementById('profRank').value = p.rank || 'FM'; document.getElementById('profName').value = p.name || ''; document.getElementById('profRK').value = p.rk || ''; document.getElementById('profAddress').value = p.address || '';
+    }
+
+    // --- OPORD (EINSATZBEFEHL) ---
+    function saveOpord() {
+        const d = {o1: document.getElementById('opord1').value, o2: document.getElementById('opord2').value, o3: document.getElementById('opord3').value, o4: document.getElementById('opord4').value, o5: document.getElementById('opord5').value};
+        localStorage.setItem('bos_opord', JSON.stringify(d)); alert("Befehl gespeichert!");
+    }
+    function loadOpord() {
+        const d = JSON.parse(localStorage.getItem('bos_opord') || '{}');
+        for(let i=1; i<=5; i++) if(d['o'+i]) document.getElementById('opord'+i).value = d['o'+i];
+    }
+    function copyOpord() {
+        const txt = `EINSATZBEFEHL\n1. LAGE: ${document.getElementById('opord1').value}\n2. AUFTRAG: ${document.getElementById('opord2').value}\n3. DURCHFÜHRUNG: ${document.getElementById('opord3').value}\n4. VERSORGUNG: ${document.getElementById('opord4').value}\n5. FÜHRUNG/FUNK: ${document.getElementById('opord5').value}`;
+        navigator.clipboard.writeText(txt).then(()=>alert("Kopiert."));
+    }
+
+    // --- DIENST TRACKER ---
+    function addRdl() {
+        const n = document.getElementById('rdlName').value, d = document.getElementById('rdlDate').value, c = parseInt(document.getElementById('rdlDays').value);
+        if(!n || !d || !c) return;
+        const list = JSON.parse(localStorage.getItem('bos_rdl_logs') || "[]");
+        list.unshift({id:Date.now(), n, d, c}); localStorage.setItem('bos_rdl_logs', JSON.stringify(list));
+        document.getElementById('rdlName').value=""; loadRdl();
+    }
+    function loadRdl() {
+        const list = JSON.parse(localStorage.getItem('bos_rdl_logs') || "[]");
+        let sum = 0; list.forEach(x => sum += x.c);
+        document.getElementById('rdlTotalDays').innerText = sum + " h";
+        document.getElementById('rdlList').innerHTML = list.map(x => `<div class='deadline-row'><div><strong>${x.n}</strong><br><span style='color:#7f8c8d;font-size:11px'>${x.d}</span></div><div><strong style='color:#3498db'>${x.c} h</strong><button class='btn-sm-del' style='margin-left:10px;' onclick='delRdl(${x.id})'>X</button></div></div>`).join('');
+    }
+    function delRdl(id){ const l = JSON.parse(localStorage.getItem('bos_rdl_logs')).filter(x=>x.id!==id); localStorage.setItem('bos_rdl_logs', JSON.stringify(l)); loadRdl(); }
+
+    // --- DATENSICHERUNG ---
+    function exportFullData() {
+        const data = { profile: localStorage.getItem('bos_profile'), readiness: localStorage.getItem('bos_readiness_v1'), deadlines: localStorage.getItem('bos_custom_deadlines'), stan: localStorage.getItem('bos_stan_profiles'), logs: localStorage.getItem('bos_quick_logs'), radar: localStorage.getItem('bos_radar_stats'), opord: localStorage.getItem('bos_opord'), rdl: localStorage.getItem('bos_rdl_logs'), scens: localStorage.getItem('bos_custom_scenarios'), fuehrung: localStorage.getItem('bos_fuehrung_log') };
+        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `BOS_TacBoard_Backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+    function importFullData(event) {
+        const file = event.target.files[0]; if(!file) return; const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const d = JSON.parse(e.target.result);
+                if(d.profile) localStorage.setItem('bos_profile', d.profile); if(d.readiness) localStorage.setItem('bos_readiness_v1', d.readiness); if(d.deadlines) localStorage.setItem('bos_custom_deadlines', d.deadlines); if(d.stan) localStorage.setItem('bos_stan_profiles', d.stan); if(d.logs) localStorage.setItem('bos_quick_logs', d.logs); if(d.radar) localStorage.setItem('bos_radar_stats', d.radar); if(d.opord) localStorage.setItem('bos_opord', d.opord); if(d.rdl) localStorage.setItem('bos_rdl_logs', d.rdl); if(d.scens) localStorage.setItem('bos_custom_scenarios', d.scens); if(d.fuehrung) localStorage.setItem('bos_fuehrung_log', d.fuehrung);
+                alert("✅ Backup geladen!"); location.reload();
+            } catch(err) { alert("❌ Fehler beim Import."); }
+        }; reader.readAsText(file);
+    }
+
+    // --- CALENDAR & CSV EXPORT ---
+    function exportToCalendar(title, dateStr) {
+        if(!dateStr) return alert("Kein Datum gesetzt!"); const d = dateStr.replace(/-/g, '');
+        const icsMsg = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//BOS TacBoard//DE\nBEGIN:VEVENT\nDTSTART:${d}T090000Z\nDTEND:${d}T100000Z\nSUMMARY:[BOS] ${title}\nDESCRIPTION:Termin aus BOS TacBoard App\nEND:VEVENT\nEND:VCALENDAR`;
+        const blob = new Blob([icsMsg], {type: 'text/calendar;charset=utf-8'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${title.replace(/\s+/g, '_')}.ics`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+    function exportMaintCSV() {
+        const r = JSON.parse(localStorage.getItem('bos_readiness_v1') || '{}');
+        const c = JSON.parse(localStorage.getItem('bos_custom_deadlines') || '[]');
+        let csv = "Pruefung;Letztes_Datum\n";
+        if(r.g26) csv += `G26.3;${r.g26}\n`; if(r.strecke) csv += `Belastungsuebung;${r.strecke}\n`; if(r.eh) csv += `ErsteHilfe;${r.eh}\n`; if(r.fs) csv += `Fuehrerschein;${r.fs}\n`;
+        c.forEach(x => csv += `"${x.name}";${x.date}\n`);
+        const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = "BOS_Fristen.csv"; a.click();
+    }
+
+    // --- READINESS & ADMIN ---
+    function saveIGF() {
+        const data = { g26: document.getElementById('admin_g26').value, strecke: document.getElementById('admin_strecke').value, eh: document.getElementById('admin_eh').value, fs: document.getElementById('admin_fs').value };
+        localStorage.setItem('bos_readiness_v1', JSON.stringify(data));
+    }
+    function loadIGF() {
+        const data = JSON.parse(localStorage.getItem('bos_readiness_v1') || '{}');
+        ['g26','strecke','eh','fs'].forEach(k => { if(data[k]) document.getElementById('admin_'+k).value = data[k]; });
+    }
+    function addCustomDeadline() {
+        const d = JSON.parse(localStorage.getItem('bos_custom_deadlines') || "[]");
+        const n=document.getElementById('customDeadlineName').value, dt=document.getElementById('customDeadlineDate').value;
+        if(!n || !dt) return; d.push({id:Date.now(), name:n, date:dt}); localStorage.setItem('bos_custom_deadlines', JSON.stringify(d));
+        document.getElementById('customDeadlineName').value=""; document.getElementById('customDeadlineDate').value=""; renderCustomDeadlines();
+    }
+    function renderCustomDeadlines() {
+        const d = JSON.parse(localStorage.getItem('bos_custom_deadlines') || "[]").sort((a,b)=>new Date(a.date)-new Date(b.date));
+        document.getElementById('customDeadlinesContainer').innerHTML = d.map(i => `<div class='deadline-row'><div><strong>${i.name}</strong><br><span style="color:#7f8c8d; font-size:11px;">${i.date}</span></div><div class="admin-date-row"><button class='btn-sm-cal' onclick="exportToCalendar('${i.name}', '${i.date}')">📅</button><button class='btn-sm-del' style="margin:0; padding:12px; font-size:14px; width:45px;" onclick='deleteDeadline(${i.id})'>X</button></div></div>`).join('');
+    }
+    function deleteDeadline(id){ const d = JSON.parse(localStorage.getItem('bos_custom_deadlines') || "[]").filter(i=>i.id!==id); localStorage.setItem('bos_custom_deadlines', JSON.stringify(d)); renderCustomDeadlines(); }
+
+    // --- STAN CHECK ---
+    function addProfile() {
+        const p = JSON.parse(localStorage.getItem('bos_stan_profiles') || "[]"); const n=document.getElementById('profileNameInput').value; if(!n) return;
+        p.push({id:Date.now(), name:n, items:[]}); localStorage.setItem('bos_stan_profiles', JSON.stringify(p)); document.getElementById('profileNameInput').value=""; renderProfiles();
+    }
+    function renderProfiles() {
+        const p = JSON.parse(localStorage.getItem('bos_stan_profiles') || "[]");
+        document.getElementById('profilesContainer').innerHTML = p.map((prof, i) => `
+            <div class='card'>
+                <h3 style='margin:0; text-align:left; color:#fff;'>${prof.name}</h3>
+                ${prof.items.map((it, j) => `<div class='gear-row ${it.c?'checked':''}' onclick='toggleItem(${i},${j})'><span>${it.c?'☑️':'⬜'} ${it.t}</span><div class='btn-sm-del' style="margin:0; padding:10px 15px;" onclick='event.stopPropagation(); deleteItem(${i},${j})'>X</div></div>`).join('')}
+                <div style='display:flex; gap:5px; margin-top:10px;'><input id='in${i}' placeholder='Neues Teil...'><button class="btn btn-blue" style="width:auto; padding:10px;" onclick='addItem(${i})'>+</button></div>
+                <button class='btn btn-dark' style="border:none; margin-top:15px;" onclick='deleteProfile(${prof.id})'>LISTE LÖSCHEN</button>
+            </div>`).join('');
+    }
+    function addItem(i){ const p=JSON.parse(localStorage.getItem('bos_stan_profiles')); if(!document.getElementById('in'+i).value) return; p[i].items.push({t:document.getElementById('in'+i).value, c:false}); localStorage.setItem('bos_stan_profiles', JSON.stringify(p)); renderProfiles(); }
+    function toggleItem(i,j){ const p=JSON.parse(localStorage.getItem('bos_stan_profiles')); p[i].items[j].c = !p[i].items[j].c; localStorage.setItem('bos_stan_profiles', JSON.stringify(p)); renderProfiles(); }
+    function deleteItem(i,j){ const p=JSON.parse(localStorage.getItem('bos_stan_profiles')); p[i].items.splice(j,1); localStorage.setItem('bos_stan_profiles', JSON.stringify(p)); renderProfiles(); }
+    function deleteProfile(id){ if(!confirm("Löschen?")) return; const p=JSON.parse(localStorage.getItem('bos_stan_profiles')).filter(x=>x.id!==id); localStorage.setItem('bos_stan_profiles', JSON.stringify(p)); renderProfiles(); }
+
+    // --- RADAR LOGIC ---
+    let globalLowestRadarKey = 'waf';
+    function updateRadarSl(k) { document.getElementById('val_'+k).innerText = document.getElementById('sl_'+k).value; }
+    function saveRadar() {
+        const s = { waf: parseInt(document.getElementById('sl_waf').value), san: parseInt(document.getElementById('sl_san').value), tak: parseInt(document.getElementById('sl_tak').value), ori: parseInt(document.getElementById('sl_ori').value), phy: parseInt(document.getElementById('sl_phy').value) };
+        localStorage.setItem('bos_radar_stats', JSON.stringify(s)); document.getElementById('radarSliders').style.display = 'none'; loadRadar();
+    }
+    function loadRadar() {
+        const stats = JSON.parse(localStorage.getItem('bos_radar_stats') || '{"waf":5,"san":5,"tak":5,"ori":5,"phy":5}');
+        const keys = ['waf', 'san', 'tak', 'ori', 'phy']; const labels = ["Brand/Innen", "THL", "Führung", "San/ABC", "Maschinist"];
+        keys.forEach(k => { document.getElementById('sl_'+k).value = stats[k]; document.getElementById('val_'+k).innerText = stats[k]; });
+        drawRadarChart([stats.waf, stats.san, stats.tak, stats.ori, stats.phy], labels);
+        let lowest = {k:'waf', v:11}; keys.forEach(k => { if(stats[k] < lowest.v){ lowest.v=stats[k]; lowest.k=k; }});
+        globalLowestRadarKey = lowest.k;
+        document.getElementById('radarFeedback').innerHTML = `Schwachstelle identifiziert: <strong>${labels[keys.indexOf(lowest.k)]}</strong>.`;
+    }
+    function drawRadarChart(scores, labels) {
+        const ctx = document.getElementById('radarCanvas').getContext('2d'); ctx.clearRect(0,0,300,300);
+        const centerX=150, centerY=150, radius=90; ctx.strokeStyle=isRedMode ? "#800" : "#2c3e50";
+        for(let j=1; j<=5; j++){ ctx.beginPath(); for(let i=0; i<5; i++){ let a = -Math.PI/2 + (2*Math.PI*i/5); let x = centerX + Math.cos(a)*(radius/5*j); let y = centerY + Math.sin(a)*(radius/5*j); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); } ctx.closePath(); ctx.stroke(); }
+        ctx.fillStyle=isRedMode ? "#f00" : "#7f8c8d"; ctx.font="11px Arial"; labels.forEach((l, i) => { let a = -Math.PI/2 + (2*Math.PI*i/5); ctx.fillText(l, centerX+Math.cos(a)*115-20, centerY+Math.sin(a)*110); });
+        ctx.fillStyle=isRedMode ? "rgba(255, 0, 0, 0.4)" : "rgba(52, 152, 219, 0.4)"; ctx.strokeStyle=isRedMode ? "#f00" : "#3498db"; ctx.lineWidth=2; ctx.beginPath();
+        scores.forEach((s, i) => { let a = -Math.PI/2 + (2*Math.PI*i/5); let x = centerX + Math.cos(a)*(radius*s/10); let y = centerY + Math.sin(a)*(radius*s/10); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+
+    // --- QUICK LOG (ÜBERCRIFFE) ---
+    let currImg=null;
+    function previewPhoto(ev) { const f=ev.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=e=>{ const img=new Image(); img.onload=()=>{ const cv=document.createElement('canvas'); const sc=Math.min(600/img.width,1); cv.width=img.width*sc; cv.height=img.height*sc; cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height); currImg=cv.toDataURL('image/jpeg',0.7); document.getElementById('logPhotoPreview').src=currImg; document.getElementById('logPhotoPreview').style.display='block'; }; img.src=e.target.result; }; r.readAsDataURL(f); }
+    function saveLog() {
+        const d=document.getElementById('qlTitle').value, t=document.getElementById('qlText').value; 
+        if(!d && !t && !currImg) return alert("Leeres Log!");
+        
+        let tags=[];
+        if(document.getElementById('chk_bel').checked) tags.push("Beleidigung");
+        if(document.getElementById('chk_spuck').checked) tags.push("Bespucken");
+        if(document.getElementById('chk_droh').checked) tags.push("Bedrohung");
+        if(document.getElementById('chk_gewalt').checked) tags.push("Körperl. Gewalt");
+
+        const logs = JSON.parse(localStorage.getItem('bos_quick_logs') || "[]");
+        logs.unshift({id:Date.now(), d:d, t:t, tags: tags, date:new Date().toLocaleString('de-DE'), img:currImg});
+        try{ localStorage.setItem('bos_quick_logs', JSON.stringify(logs)); }catch(e){ return alert("Speicher voll!"); }
+        
+        document.getElementById('qlTitle').value=""; document.getElementById('qlText').value=""; document.getElementById('logPhotoPreview').style.display='none'; currImg=null; 
+        document.querySelectorAll('#view-log input[type=checkbox]').forEach(c=>c.checked=false);
+        loadLogs(); alert("Beweis lokal gesichert."); switchView('view-menu');
+    }
+    function loadLogs() {
+        const logs = JSON.parse(localStorage.getItem('bos_quick_logs') || "[]");
+        document.getElementById('logList').innerHTML = logs.map(l => `<div class='log-entry'>${l.date}: <strong>${l.d}</strong><br><span style="color:#e74c3c; font-size:11px;">${l.tags.join(' | ')}</span><br>${l.t}${l.img?`<br><img src='${l.img}' class='log-img'>`:''}<br><button class='btn-sm-del' style="margin-top:10px; padding:10px 15px;" onclick='deleteLog(${l.id})'>X LÖSCHEN</button></div>`).join('');
+    }
+    function deleteLog(id){ const l=JSON.parse(localStorage.getItem('bos_quick_logs')).filter(x=>x.id!==id); localStorage.setItem('bos_quick_logs', JSON.stringify(l)); loadLogs(); }
+
+
+    // --- SZENARIO JSON ENGINE ---
+    const defaultScenarios = {
+        "fw_gaffer_advanced": {
+            title: "VU (Gaffer mit Eskalation)", icon: "📱", color: "#f1c40f", startNode: "node_1",
+            nodes: {
+                "node_1": { situation: "VU auf Landstraße. Ein Gaffer filmt die Rettung.", question: "Was tust du?", options: [
+                    { text: "In sein Sichtfeld treten und Platzverweis aussprechen.", next: "node_2_sicht", effect: "good", feedback: "Gut. Aktive Störung unterbunden." },
+                    { text: "Ich ignoriere ihn, solange er nichts sagt.", next: "node_2_fail", effect: "bad", feedback: "Fehler. Er stört die Persönlichkeitsrechte der Opfer und wird mutiger." }
+                ]},
+                "node_2_fail": { situation: "Er tritt näher an den RTW heran. Behindert den Notarzt.", question: "RETTUNGSANKER:", options: [
+                    { text: "Handy wegschlagen.", next: "end_strafbar", effect: "bad", feedback: "Game Over. Sachbeschädigung." },
+                    { text: "Körperlich dazwischenstellen: 'Sofort zurücktreten!'", next: "node_3_recovery", effect: "neutral", feedback: "Gerade noch gerettet." }
+                ]},
+                "node_3_recovery": { situation: "Er weicht zurück, flucht: 'Ich mach was ich will!'", question: "Letzter Schritt?", options: [
+                    { text: "Polizei anfordern.", next: "end_polizei", effect: "good", feedback: "Richtig. Polizei löst das." }
+                ]},
+                "node_2_sicht": { situation: "Er schimpft: 'Ich zahl Steuern!'.", question: "Nächster Schritt?", options: [
+                    { text: "Polizei anfordern.", next: "end_polizei", effect: "good", feedback: "Korrekt. Grenzen erreicht." }
+                ]},
+                "end_polizei": { situation: "Szenario gemeistert.", end: true }, "end_strafbar": { situation: "Szenario gescheitert. Anzeige am Hals.", end: true }
+            }
+        },
+        "fw_brand_verzweifelt": {
+            title: "Wohnungsbrand (Panik)", icon: "🔥", color: "#e74c3c", startNode: "node_1",
+            nodes: {
+                "node_1": { situation: "Vollbrand. Ein Mann rennt auf dich zu: 'Mein Kind ist da oben!' Er drängt an dir vorbei.", question: "Reaktion?", options: [
+                    { text: "Physisch stoppen: 'Wir holen das Kind JETZT! Wo genau ist es?'", next: "node_success", effect: "good", feedback: "Richtig. Einfangen, Aufgabe geben." },
+                    { text: "Wegstoßen: 'Hier ist zu!'", next: "node_fail", effect: "bad", feedback: "Gefährlich. Er greift an." }
+                ]},
+                "node_success": { situation: "Er zeigt aufs Fenster. Du funks die Info durch.", end: true },
+                "node_fail": { situation: "Er schlägt dich nieder und rennt ins Feuer.", end: true }
+            }
+        },
+        "fw_fest_01": {
+            title: "Feuerwehrfest (Alkohol)", icon: "🍻", color: "#8e44ad", startNode: "node_1",
+            nodes: {
+                "node_1": { situation: "Bierzelt 23:00. Zwei Betrunkene schubsen sich massiv. Du stehst im Poloshirt daneben.", question: "Wie eingreifen?", options: [
+                    { text: "Zu dritt im Trupp dazwischengehen und trennen.", next: "node_ok", effect: "good", feedback: "3er-Regel: Überzahl deeskaliert meist sofort." },
+                    { text: "Allein dazwischenspringen.", next: "node_fail", effect: "bad", feedback: "Hohes Risiko. Du fängst dir blind einen Schlag ein." }
+                ]},
+                "node_ok": { situation: "Sie lassen sich nach draußen führen. Lage geklärt.", end: true },
+                "node_fail": { situation: "Du wirst verletzt. Das Fest eskaliert zur Schlägerei.", end: true }
+            }
+        }
+    };
+
+    let trainingScenarios = {}; let currentScenId = ""; let currentNodeId = "";
+
+    function initScenarios() {
+        const custom = JSON.parse(localStorage.getItem('bos_custom_scenarios') || "{}");
+        trainingScenarios = { ...defaultScenarios, ...custom };
+        renderTrainingList();
+    }
+
+    function renderTrainingList() {
+        const container = document.getElementById('trainingListContainer'); container.innerHTML = '';
+        Object.entries(trainingScenarios).forEach(([id, s]) => {
+            const isCustom = !defaultScenarios[id];
+            const wrap = document.createElement('div'); wrap.style.display = 'flex'; wrap.style.gap = '5px';
+            const btn = document.createElement('button'); btn.className = 'btn btn-dark'; btn.style.flex = '1'; btn.style.borderColor = s.color || '#3498db'; btn.style.color = s.color || '#3498db'; btn.innerHTML = `<span class="icon" style="font-size:18px;">${s.icon || '🕹️'}</span><span>${s.title}</span>`; btn.onclick = () => startScenario(id);
+            wrap.appendChild(btn);
+            if (isCustom) {
+                const del = document.createElement('button'); del.className = 'btn btn-dark'; del.style.width = 'auto'; del.style.padding = '0 15px'; del.style.borderColor = '#c0392b'; del.style.color = '#c0392b'; del.innerText = "X"; del.onclick = () => { if(confirm("Löschen?")){ const c = JSON.parse(localStorage.getItem('bos_custom_scenarios') || "{}"); delete c[id]; localStorage.setItem('bos_custom_scenarios', JSON.stringify(c)); initScenarios(); } };
+                wrap.appendChild(del);
+            }
+            container.appendChild(wrap);
+        });
+    }
+
+    function startScenario(id) { currentScenId = id; currentNodeId = trainingScenarios[id].startNode; document.getElementById('trainingListContainer').style.display = 'none'; document.getElementById('training-active').style.display = 'block'; document.getElementById('train-title').innerText = trainingScenarios[id].title; renderNode(); }
+
+    function renderNode() {
+        const node = trainingScenarios[currentScenId].nodes[currentNodeId];
+        document.getElementById('train-situation').innerText = node.situation;
+        const qEl = document.getElementById('train-question'); const optEl = document.getElementById('train-options'); const fbEl = document.getElementById('train-feedback'); const nextBtn = document.getElementById('train-next-btn');
+        fbEl.style.display = 'none'; nextBtn.style.display = 'none'; optEl.innerHTML = '';
+        if(node.end) { qEl.innerText = "Übung beendet."; nextBtn.innerText = "SZENARIO BEENDEN"; nextBtn.style.display = 'block'; nextBtn.onclick = () => { document.getElementById('trainingListContainer').style.display = 'flex'; document.getElementById('training-active').style.display = 'none'; }; return; }
+        qEl.innerText = node.question;
+        node.options.forEach((opt) => {
+            const btn = document.createElement('button'); btn.className = 'btn btn-dark'; btn.style.textAlign = 'left'; btn.style.justifyContent = 'flex-start'; btn.style.textTransform = 'none'; btn.style.fontWeight = 'normal'; btn.innerText = opt.text;
+            btn.onclick = () => { optEl.innerHTML = ''; fbEl.innerText = opt.feedback; fbEl.style.display = 'block'; fbEl.style.background = opt.effect === 'good' ? '#27ae60' : (opt.effect === 'bad' ? '#c0392b' : '#f39c12'); fbEl.style.color = opt.effect === 'neutral' ? '#000' : '#fff'; currentNodeId = opt.next; nextBtn.innerText = "WEITER"; nextBtn.style.display = 'block'; nextBtn.onclick = () => renderNode(); };
+            optEl.appendChild(btn);
+        });
+    }
+
+    function importScenarioFile(e) {
+        const file = e.target.files[0]; if(!file) return; const reader = new FileReader();
+        reader.onload = function(ev) {
+            try {
+                const parsed = JSON.parse(ev.target.result);
+                if(!parsed.id || !parsed.startNode || !parsed.nodes) return alert("Ungültiges JSON!");
+                let custom = JSON.parse(localStorage.getItem('bos_custom_scenarios') || "{}"); custom[parsed.id] = parsed; localStorage.setItem('bos_custom_scenarios', JSON.stringify(custom)); alert("Importiert!"); initScenarios();
+            } catch(err) { alert("Fehler beim Lesen der Datei."); } e.target.value = ""; 
+        }; reader.readAsText(file);
+    }
+
+    // --- POINT & TALK ---
+    function showPT(icon, de, en, ua, ar) {
+        document.getElementById('pt-icon').innerText = icon;
+        document.getElementById('pt-text').innerText = "🇩🇪 " + de;
+        document.getElementById('pt-text2').innerText = "🇬🇧 " + en;
+        document.getElementById('pt-text3').innerText = "🇸🇦 " + ar;
+        document.getElementById('pt-fullscreen').style.display='flex';
+    }
+
+    // --- SERVICE WORKER REGISTRATION (PWA) ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(registration => {
+                    console.log('SW registriert: ', registration.scope);
+                })
+                .catch(err => {
+                    console.log('SW Registrierung fehlgeschlagen: ', err);
+                });
+        });
+    }
+</script>
+</body>
+</html>

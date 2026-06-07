@@ -1,0 +1,16 @@
+{
+    "name": "BOS TacBoard",
+    "short_name": "TacBoard",
+    "description": "Feuerwehr Einsatz- & Taktikboard (Offline)",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#0d1117",
+    "theme_color": "#c0392b",
+    "icons": [
+        {
+            "src": "img/logo.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
